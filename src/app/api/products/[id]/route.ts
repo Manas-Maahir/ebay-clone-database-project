@@ -78,12 +78,13 @@ export async function GET(
     }
 
     // Map product to frontend format
+    // Set buyNowPrice to 1.2x the current price for Buy Now option
     const mappedProduct = {
       id: product.id,
       title: product.productName,
       description: product.description,
       price: product.price,
-      buyNowPrice: null,
+      buyNowPrice: product.price * 1.2, // Buy Now price is 20% higher than starting bid
       condition: product.keyword || 'new',
       shippingCost: 0,
       imageUrl: '/placeholder-image.jpg',

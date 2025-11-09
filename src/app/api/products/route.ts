@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       title: product.productName,
       description: product.description,
       price: product.price,
-      buyNowPrice: null, // Not in schema
+      buyNowPrice: product.price * 1.2, // Buy Now price is 20% higher than starting bid
       condition: product.keyword || 'new',
       shippingCost: 0, // Default to free shipping
       imageUrl: '/placeholder-image.jpg', // Placeholder since not in schema
