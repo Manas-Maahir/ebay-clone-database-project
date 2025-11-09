@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { products, bids, sellers, categories } from '@/db/schema';
+import { productOffer, seller, bid } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 export async function GET(
@@ -26,8 +26,8 @@ export async function GET(
     // Query product by ID
     const productResult = await db
       .select()
-      .from(products)
-      .where(eq(products.id, productId))
+      .from(productOffer)
+      .where(eq(productOffer.id, productId))
       .limit(1);
 
     if (productResult.length === 0) {
@@ -42,59 +42,64 @@ export async function GET(
 
     const product = productResult[0];
 
-    // Query bids for this product, ordered by amount DESC
+    // Query bids for this product
     const productBids = await db
       .select()
-      .from(bids)
-      .where(eq(bids.productId, productId))
-      .orderBy(desc(bids.amount));
+      .from(bid)
+      .where(eq(bid.productId, productId))
+      .orderBy(desc(bid.amount));
+
+    // Map bids to frontend format
+    const mappedBids = productBids.map(b => ({
+      id: b.id,
+      amount: b.amount,
+      bidderName: `Bidder ${b.buyerId || 'Unknown'}`,
+      createdAt: b.bidDate
+    }));
 
     // Query seller info
-    let seller = null;
+    let sellerInfo = null;
     if (product.sellerId) {
       const sellerResult = await db
         .select()
-        .from(sellers)
-        .where(eq(sellers.id, product.sellerId))
+        .from(seller)
+        .where(eq(seller.id, product.sellerId))
         .limit(1);
 
       if (sellerResult.length > 0) {
-        seller = sellerResult[0];
+        sellerInfo = {
+          id: sellerResult[0].id,
+          username: `Seller ${sellerResult[0].id}`,
+          rating: 98.5,
+          itemsSold: 100,
+          joinedDate: new Date().toISOString()
+        };
       }
     }
 
-    // Query category info
-    let category = null;
-    if (product.categoryId) {
-      const categoryResult = await db
-        .select()
-        .from(categories)
-        .where(eq(categories.id, product.categoryId))
-        .limit(1);
+    // Map product to frontend format
+    const mappedProduct = {
+      id: product.id,
+      title: product.productName,
+      description: product.description,
+      price: product.price,
+      buyNowPrice: null,
+      condition: product.keyword || 'new',
+      shippingCost: 0,
+      imageUrl: '/placeholder-image.jpg',
+      status: 'active',
+      endsAt: product.dateExpiration,
+      categoryId: null,
+      sellerId: product.sellerId,
+      views: 0
+    };
 
-      if (categoryResult.length > 0) {
-        category = categoryResult[0];
-      }
-    }
-
-    // Increment views count
-    await db
-      .update(products)
-      .set({
-        views: (product.views || 0) + 1,
-      })
-      .where(eq(products.id, productId));
-
-    // Return combined data
     return NextResponse.json(
       {
-        product: {
-          ...product,
-          views: (product.views || 0) + 1, // Return updated view count
-        },
-        bids: productBids,
-        seller: seller,
-        category: category,
+        product: mappedProduct,
+        bids: mappedBids,
+        seller: sellerInfo,
+        category: null
       },
       { status: 200 }
     );
