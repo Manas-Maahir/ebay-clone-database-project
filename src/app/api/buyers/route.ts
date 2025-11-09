@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { seller, userAccount } from '@/db/schema';
+import { buyer, userAccount } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
-    // Single seller by ID with joined userAccount data
+    // Single buyer by ID with joined userAccount data
     if (id) {
       if (!id || isNaN(parseInt(id))) {
         return NextResponse.json(
@@ -17,34 +17,47 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const sellerRecord = await db
-        .select()
-        .from(seller)
-        .leftJoin(userAccount, eq(seller.userId, userAccount.id))
-        .where(eq(seller.id, parseInt(id)))
+      const buyerRecord = await db
+        .select({
+          id: buyer.id,
+          userId: buyer.userId,
+          userAccount: {
+            id: userAccount.id,
+            username: userAccount.username,
+            email: userAccount.email,
+            name: userAccount.name,
+            emailVerified: userAccount.emailVerified,
+            image: userAccount.image,
+            createdAt: userAccount.createdAt,
+            updatedAt: userAccount.updatedAt,
+          },
+        })
+        .from(buyer)
+        .leftJoin(userAccount, eq(buyer.userId, userAccount.id))
+        .where(eq(buyer.id, parseInt(id)))
         .limit(1);
 
-      if (sellerRecord.length === 0) {
+      if (buyerRecord.length === 0) {
         return NextResponse.json(
-          { error: 'Seller not found', code: 'NOT_FOUND' },
+          { error: 'Buyer not found', code: 'NOT_FOUND' },
           { status: 404 }
         );
       }
 
-      return NextResponse.json(sellerRecord[0], { status: 200 });
+      return NextResponse.json(buyerRecord[0], { status: 200 });
     }
 
-    // List all sellers with pagination
+    // List all buyers with pagination
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100);
     const offset = parseInt(searchParams.get('offset') ?? '0');
 
-    const sellers = await db
+    const buyers = await db
       .select()
-      .from(seller)
+      .from(buyer)
       .limit(limit)
       .offset(offset);
 
-    return NextResponse.json(sellers, { status: 200 });
+    return NextResponse.json(buyers, { status: 200 });
   } catch (error) {
     console.error('GET error:', error);
     return NextResponse.json(
@@ -82,14 +95,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const newSeller = await db
-      .insert(seller)
+    const newBuyer = await db
+      .insert(buyer)
       .values({
         userId: userId !== undefined && userId !== null ? parseInt(userId) : null,
       })
       .returning();
 
-    return NextResponse.json(newSeller[0], { status: 201 });
+    return NextResponse.json(newBuyer[0], { status: 201 });
   } catch (error) {
     console.error('POST error:', error);
     return NextResponse.json(
@@ -111,16 +124,16 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Check if seller exists
-    const existingSeller = await db
+    // Check if buyer exists
+    const existingBuyer = await db
       .select()
-      .from(seller)
-      .where(eq(seller.id, parseInt(id)))
+      .from(buyer)
+      .where(eq(buyer.id, parseInt(id)))
       .limit(1);
 
-    if (existingSeller.length === 0) {
+    if (existingBuyer.length === 0) {
       return NextResponse.json(
-        { error: 'Seller not found', code: 'NOT_FOUND' },
+        { error: 'Buyer not found', code: 'NOT_FOUND' },
         { status: 404 }
       );
     }
@@ -151,15 +164,15 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const updatedSeller = await db
-      .update(seller)
+    const updatedBuyer = await db
+      .update(buyer)
       .set({
         userId: userId !== undefined && userId !== null ? parseInt(userId) : null,
       })
-      .where(eq(seller.id, parseInt(id)))
+      .where(eq(buyer.id, parseInt(id)))
       .returning();
 
-    return NextResponse.json(updatedSeller[0], { status: 200 });
+    return NextResponse.json(updatedBuyer[0], { status: 200 });
   } catch (error) {
     console.error('PUT error:', error);
     return NextResponse.json(
@@ -181,29 +194,29 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Check if seller exists
-    const existingSeller = await db
+    // Check if buyer exists
+    const existingBuyer = await db
       .select()
-      .from(seller)
-      .where(eq(seller.id, parseInt(id)))
+      .from(buyer)
+      .where(eq(buyer.id, parseInt(id)))
       .limit(1);
 
-    if (existingSeller.length === 0) {
+    if (existingBuyer.length === 0) {
       return NextResponse.json(
-        { error: 'Seller not found', code: 'NOT_FOUND' },
+        { error: 'Buyer not found', code: 'NOT_FOUND' },
         { status: 404 }
       );
     }
 
     const deleted = await db
-      .delete(seller)
-      .where(eq(seller.id, parseInt(id)))
+      .delete(buyer)
+      .where(eq(buyer.id, parseInt(id)))
       .returning();
 
     return NextResponse.json(
       {
-        message: 'Seller deleted successfully',
-        seller: deleted[0],
+        message: 'Buyer deleted successfully',
+        buyer: deleted[0],
       },
       { status: 200 }
     );

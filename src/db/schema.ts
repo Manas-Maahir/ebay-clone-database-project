@@ -1,52 +1,72 @@
 import { sqliteTable, integer, text, real } from 'drizzle-orm/sqlite-core';
 
-export const categories = sqliteTable('categories', {
+export const userAccount = sqliteTable('user_account', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  ssn: text('ssn'),
   name: text('name').notNull(),
-  slug: text('slug').notNull().unique(),
-  description: text('description'),
-  createdAt: text('created_at').notNull(),
+  age: integer('age'),
+  email: text('email').notNull(),
+  phone: text('phone'),
+  address: text('address'),
+  nationality: text('nationality'),
+  birthdate: text('birthdate'),
 });
 
-export const sellers = sqliteTable('sellers', {
+export const account = sqliteTable('account', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   username: text('username').notNull().unique(),
-  email: text('email').notNull().unique(),
-  rating: real('rating').default(0),
-  itemsSold: integer('items_sold').default(0),
-  joinedDate: text('joined_date').notNull(),
-  avatarUrl: text('avatar_url'),
-  createdAt: text('created_at').notNull(),
+  password: text('password').notNull(),
+  type: text('type').notNull(),
+  userId: integer('user_id').references(() => userAccount.id),
 });
 
-export const products = sqliteTable('products', {
+export const buyer = sqliteTable('buyer', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  categoryId: integer('category_id').references(() => categories.id),
-  sellerId: integer('seller_id').references(() => sellers.id),
-  title: text('title').notNull(),
+  userId: integer('user_id').references(() => userAccount.id),
+});
+
+export const seller = sqliteTable('seller', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').references(() => userAccount.id),
+});
+
+export const productOffer = sqliteTable('product_offer', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  productName: text('product_name').notNull(),
   description: text('description'),
+  keyword: text('keyword'),
+  shippingType: text('shipping_type'),
+  dateExpiration: text('date_expiration'),
+  quantity: integer('quantity').notNull(),
   price: real('price').notNull(),
-  buyNowPrice: real('buy_now_price'),
-  condition: text('condition').notNull(),
-  shippingCost: real('shipping_cost').default(0),
-  imageUrl: text('image_url').notNull(),
-  status: text('status').notNull().default('active'),
-  views: integer('views').default(0),
-  createdAt: text('created_at').notNull(),
-  endsAt: text('ends_at'),
+  sellerId: integer('seller_id').references(() => seller.id),
 });
 
-export const bids = sqliteTable('bids', {
+export const directBuy = sqliteTable('direct_buy', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  productId: integer('product_id').references(() => products.id),
-  bidderName: text('bidder_name').notNull(),
+  productId: integer('product_id').references(() => productOffer.id),
+  buyerId: integer('buyer_id').references(() => buyer.id),
+});
+
+export const bid = sqliteTable('bid', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   amount: real('amount').notNull(),
-  createdAt: text('created_at').notNull(),
+  bidDate: text('bid_date').notNull(),
+  buyerId: integer('buyer_id').references(() => buyer.id),
+  productId: integer('product_id').references(() => productOffer.id),
 });
 
-export const watches = sqliteTable('watches', {
+export const auctionOffer = sqliteTable('auction_offer', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  productId: integer('product_id').references(() => products.id),
-  watcherName: text('watcher_name').notNull(),
-  createdAt: text('created_at').notNull(),
+  minPrice: real('min_price').notNull(),
+  winnerName: text('winner_name'),
+  bidId: integer('bid_id').references(() => bid.id),
+});
+
+export const payment = sqliteTable('payment', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  amount: real('amount').notNull(),
+  type: text('type').notNull(),
+  executedBy: text('executed_by').notNull(),
+  buyerId: integer('buyer_id').references(() => buyer.id),
 });
